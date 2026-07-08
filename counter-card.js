@@ -1,24 +1,24 @@
 // ================================================================
-// counter-card.js — Custom Lovelace Card för HA
-// Interaktiv räknare 0–10 för småbarn, optimerad för surfplatta.
-// Skapar flytande siffror vid tryck + automatiskt tema- och nummerbyte.
+// counter-card.js — Custom Lovelace Card for HA
+// Interactive 0–10 counter for kids, optimized for tablets.
+// Creates floating numbers on tap + auto theme/number cycling.
 // ================================================================
 
 (function () {
   'use strict';
 
   // ================================================================
-  // Färgteman: varje ny omgång får ett slumpmässigt nytt tema.
-  // bg = bakgrundsgradient, colors = palett för flytande siffror
+  // Color themes: each new round gets a random new theme.
+  // bg = background gradient, colors = palette for floating numbers
   // ================================================================
   const THEMES = [
     {
-      name: 'Blå',
+      name: 'Blue',
       bg: 'linear-gradient(135deg, #e3f2fd 0%, #90caf9 50%, #bbdefb 100%)',
       colors: ['#1565C0', '#1976D2', '#1E88E5', '#2196F3', '#42A5F5', '#64B5F6'],
     },
     {
-      name: 'Grön',
+      name: 'Green',
       bg: 'linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 50%, #c8e6c9 100%)',
       colors: ['#2E7D32', '#388E3C', '#43A047', '#4CAF50', '#66BB6A', '#81C784'],
     },
@@ -28,59 +28,59 @@
       colors: ['#E65100', '#F57C00', '#EF6C00', '#FF9800', '#FFA726', '#FFB74D'],
     },
     {
-      name: 'Lila',
+      name: 'Purple',
       bg: 'linear-gradient(135deg, #f3e5f5 0%, #ce93d8 50%, #e1bee7 100%)',
       colors: ['#6A1B9A', '#7B1FA2', '#8E24AA', '#9C27B0', '#AB47BC', '#CE93D8'],
     },
     {
-      name: 'Turkos',
+      name: 'Turquoise',
       bg: 'linear-gradient(135deg, #e0f7fa 0%, #80deea 50%, #b2ebf2 100%)',
       colors: ['#006064', '#00838F', '#0097A7', '#00BCD4', '#26C6DA', '#4DD0E1'],
     },
     {
-      name: 'Rosa',
+      name: 'Pink',
       bg: 'linear-gradient(135deg, #fce4ec 0%, #f48fb1 50%, #f8bbd0 100%)',
       colors: ['#880E4F', '#AD1457', '#C62828', '#E91E63', '#F06292', '#F48FB1'],
     },
     {
-      name: 'Regnbåge',
+      name: 'Rainbow',
       bg: 'linear-gradient(135deg, #ffcdd2 0%, #fff9c4 25%, #c8e6c9 50%, #b3e5fc 75%, #e1bee7 100%)',
       colors: ['#e53935', '#fb8c00', '#43a047', '#1e88e5', '#8e24aa', '#00acc1'],
     },
   ];
 
   // ================================================================
-  // HUVUDKOMPONENT — CounterCard
+  // MAIN COMPONENT — CounterCard
   // ================================================================
   class CounterCard extends HTMLElement {
     constructor() {
       super();
       this.attachShadow({ mode: 'open' });
 
-      // Inre tillstånd
+      // Internal state
       this._count = 0;                                // 0–10
       this._themeIndex = Math.floor(Math.random() * THEMES.length);
-      this._floatingNumbers = [];                      // sparade tryck-siffror
+      this._floatingNumbers = [];                      // saved tap numbers
       this._timer = null;
       this._hintTimer = null;
     }
 
     // ----------------------------------------------------------------
-    // Lovelace API — konfiguration
+    // Lovelace API — configuration
     // ----------------------------------------------------------------
     setConfig(config) {
       this._config = config;
     }
 
     // ----------------------------------------------------------------
-    // Livscykel — när kortet läggs till i DOM:en
+    // Lifecycle — when the card is added to the DOM
     // ----------------------------------------------------------------
     connectedCallback() {
       this._render();
       this._startCounter();
       this._attachEvents();
 
-      // Visa hinttext i 5 sekunder, dölj sedan
+      // Show hint text for 5 seconds, then hide
       this._hintTimer = setTimeout(() => {
         const hint = this.shadowRoot.getElementById('hint');
         if (hint) hint.classList.add('hint--hidden');
@@ -88,7 +88,7 @@
     }
 
     // ----------------------------------------------------------------
-    // Livscykel — när kortet tas bort från DOM:en
+    // Lifecycle — when the card is removed from the DOM
     // ----------------------------------------------------------------
     disconnectedCallback() {
       this._stopCounter();
@@ -97,14 +97,14 @@
     }
 
     // ----------------------------------------------------------------
-    // Lovelace API — krävs för layout
+    // Lovelace API — required for layout
     // ----------------------------------------------------------------
     getCardSize() {
       return 1;
     }
 
     // ----------------------------------------------------------------
-    // Bygger hela DOM-strukturen (körs en gång vid mount)
+    // Builds the entire DOM structure (runs once on mount)
     // ----------------------------------------------------------------
     _render() {
       const theme = THEMES[this._themeIndex];
@@ -112,17 +112,17 @@
 
       shadow.innerHTML = `
         <style>
-          /* === Rundat, barnvänligt typsnitt från Google Fonts ===
-             Om du vill slippa extern beroende, ta bort @import-raden
-             nedan — fallback blir systemtypsnitt (Segoe UI / San Francisco). */
+          /* === Rounded, kid-friendly font from Google Fonts ===
+             To drop the external dependency, remove the @import line
+             below — fallback becomes the system font (Segoe UI / San Francisco). */
           @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
 
-          /* === HELA KORTET — fyller hela skärmytan === */
+          /* === THE WHOLE CARD — fills the entire screen area === */
           .container {
             position: relative;
             width: 100%;
             height: 100vh;
-            height: 100dvh;           /* dynamic viewport = bra på Safari/Chrome mobile */
+            height: 100dvh;           /* dynamic viewport = good on Safari/Chrome mobile */
             background: ${theme.bg};
             background-size: 200% 200%;
             overflow: hidden;
@@ -139,13 +139,13 @@
             transition: opacity 0.5s ease;
           }
 
-          /* === Långsam gradientförflyttning — ger liv åt bakgrunden === */
+          /* === Slow gradient drift — gives the background life === */
           @keyframes bgShift {
             0%   { background-position: 0% 0%; }
             100% { background-position: 100% 100%; }
           }
 
-          /* === HUVUDRÄKNAREN — stor siffra i mitten === */
+          /* === MAIN COUNTER — big number in the middle === */
           .counter {
             position: relative;
             z-index: 2;
@@ -158,14 +158,14 @@
             animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
           }
 
-          /* === Inzoom-animation för räknaren när siffran ändras === */
+          /* === Zoom-in animation for the counter when the number changes === */
           @keyframes popIn {
             0%   { transform: scale(0.5); opacity: 0.2; }
             60%  { transform: scale(1.1); }
             100% { transform: scale(1);   opacity: 1; }
           }
 
-          /* === BEHÅLLARE FÖR FLYTANDE SIFFROR (ovanpå räknaren) === */
+          /* === CONTAINER FOR FLOATING NUMBERS (above the counter) === */
           .floating-container {
             position: absolute;
             inset: 0;
@@ -173,7 +173,7 @@
             z-index: 3;
           }
 
-          /* === ENSTAKA FLYTANDE SIFFRA === */
+          /* === SINGLE FLOATING NUMBER === */
           .floating-number {
             position: absolute;
             font-size: min(18vw, 130px);
@@ -186,7 +186,7 @@
             animation-delay: 0s, 0.6s;
           }
 
-          /* === Studs- och snurr-animation när ny siffra skapas === */
+          /* === Bounce + spin animation when a new number is created === */
           @keyframes bounceIn {
             0%   { transform: translate(-50%, -50%) scale(0)  rotate(-20deg); opacity: 0; }
             50%  { transform: translate(-50%, -50%) scale(1.4) rotate(8deg);  opacity: 1; }
@@ -194,19 +194,19 @@
             100% { transform: translate(-50%, -50%) scale(1)   rotate(0deg);  opacity: 0.85; }
           }
 
-          /* === Lugn gungning så att siffrorna inte står helt stilla === */
+          /* === Gentle bob so numbers don't sit completely still === */
           @keyframes gentleFloat {
             0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
             50%      { transform: translate(-50%, -50%) translateY(-10px); }
           }
 
-          /* === Borttoning — siffran försvinner mjukt === */
+          /* === Fade out — number disappears softly === */
           @keyframes fadeOut {
             0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.85; }
             100% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
           }
 
-          /* === HINT-TEXT "Tryck på skärmen!" längst ner === */
+          /* === HINT TEXT "Tap the screen!" at the bottom === */
           .hint {
             position: absolute;
             bottom: 6%;
@@ -223,7 +223,7 @@
             opacity: 0;
           }
 
-          /* === Mjuk fade-in vid temabyte (container läggs på nytt) === */
+          /* === Soft fade-in on theme change (container re-applied) === */
           @keyframes fadeInContainer {
             0%   { opacity: 0.5; }
             100% { opacity: 1; }
@@ -233,24 +233,24 @@
         <div class="container" id="container">
           <div class="counter" id="counter">${this._count}</div>
           <div class="floating-container" id="floating-container"></div>
-          <div class="hint" id="hint">👆 Tryck på skärmen!</div>
+          <div class="hint" id="hint">👆 Tap the screen!</div>
         </div>
       `;
     }
 
     // ----------------------------------------------------------------
-    // RÄKNARE — starta intervallet (var 5:e sekund)
+    // COUNTER — start the interval (every 5 seconds)
     // ----------------------------------------------------------------
     _startCounter() {
       this._timer = setInterval(() => {
         if (this._count >= 10) {
-          // === OMGÅNGEN ÄR SLUT — börja om från 0 med nytt tema ===
+          // === ROUND IS OVER — restart from 0 with a new theme ===
           this._count = 0;
           this._themeIndex = (this._themeIndex + 1) % THEMES.length;
-          this._floatingNumbers = [];               // rensa alla tryckta siffror
+          this._floatingNumbers = [];               // clear all tapped numbers
           this._clearFloatingNumbers();
-          this._applyTheme();                       // byt bakgrund + siffersfärg
-          this._animateCounter();                   // visa 0 med animation
+          this._applyTheme();                       // swap background + number color
+          this._animateCounter();                   // show 0 with animation
         } else {
           this._count++;
           this._animateCounter();
@@ -259,7 +259,7 @@
     }
 
     // ----------------------------------------------------------------
-    // Stoppa räknaren
+    // Stop the counter
     // ----------------------------------------------------------------
     _stopCounter() {
       if (this._timer) {
@@ -269,20 +269,20 @@
     }
 
     // ----------------------------------------------------------------
-    // Uppdatera bara siffran i DOM:en (ingen full omrendering)
+    // Update only the number in the DOM (no full re-render)
     // ----------------------------------------------------------------
     _animateCounter() {
       const el = this.shadowRoot.getElementById('counter');
       if (!el) return;
       el.textContent = this._count;
-      // Återstarta pop-animation
+      // Restart the pop animation
       el.style.animation = 'none';
-      void el.offsetWidth;                          // tvinga reflow
+      void el.offsetWidth;                          // force reflow
       el.style.animation = 'popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both';
     }
 
     // ----------------------------------------------------------------
-    // Byt bakgrund och räknarfärg när temat ändras (ingen omrendering)
+    // Swap background and counter color when theme changes (no re-render)
     // ----------------------------------------------------------------
     _applyTheme() {
       const theme = THEMES[this._themeIndex];
@@ -293,7 +293,7 @@
     }
 
     // ----------------------------------------------------------------
-    // Rensa alla flytande siffror från skärmen
+    // Clear all floating numbers from the screen
     // ----------------------------------------------------------------
     _clearFloatingNumbers() {
       const c = this.shadowRoot.getElementById('floating-container');
@@ -301,33 +301,33 @@
     }
 
     // ----------------------------------------------------------------
-    // SKAPA EN NY FLYTANDE SIFFRA vid tryck
-    // clientX / clientY från pointer-event
+    // CREATE A NEW FLOATING NUMBER on tap
+    // clientX / clientY from pointer-event
     // ----------------------------------------------------------------
     _createFloatingNumber(clientX, clientY) {
       const container = this.shadowRoot.getElementById('floating-container');
       if (!container) return;
 
-      // Begränsa antal flytande siffror så det inte blir rörigt vid mycket klickande
+      // Cap the number of floating numbers so heavy tapping stays tidy
       const MAX_FLOATING = 5;
       while (container.children.length >= MAX_FLOATING) {
         container.removeChild(container.firstChild);
       }
 
-      // Gör om skärmkoordinater till procent inom kortet
+      // Convert screen coords to percent within the card
       const rect = this.getBoundingClientRect();
       const x = ((clientX - rect.left) / rect.width) * 100;
       const y = ((clientY - rect.top) / rect.height) * 100;
 
-      const value = this._count;   // aktuell räknare (inte slump)
+      const value = this._count;   // current counter (not random)
       const theme = THEMES[this._themeIndex];
       const color = theme.colors[Math.floor(Math.random() * theme.colors.length)];
-      const rotation = Math.random() * 30 - 15;        // –15° till +15°
+      const rotation = Math.random() * 30 - 15;        // –15° to +15°
 
-      // Spara så att siffran kan återskapas vid eventuell omrendering
+      // Save so the number can be recreated on a re-render
       this._floatingNumbers.push({ value, x, y, color, rotation });
 
-      // Bygg DOM-element
+      // Build DOM element
       const el = document.createElement('div');
       el.className = 'floating-number';
       el.textContent = value;
@@ -337,32 +337,32 @@
       el.style.setProperty('--rot', rotation + 'deg');
       container.appendChild(el);
 
-      // Ta bort siffran efter 3 sekunder med animation
+      // Remove the number after 3 seconds with animation
       setTimeout(() => {
-        // Stoppa först de löpande animationerna (bounceIn + gentleFloat)
+        // First stop the running animations (bounceIn + gentleFloat)
         el.style.animation = 'none';
-        void el.offsetWidth;  // tvinga reflow
-        // Starta nedtoningsanimationen via inline-style (inget cache/quirk-problem)
+        void el.offsetWidth;  // force reflow
+        // Start the fade-out animation via inline-style (no cache/quirk issue)
         el.style.animation = 'fadeOut 0.5s ease forwards';
-        // Ta bort ur sparade siffror så den inte återskapas vid temabyte
+        // Remove from saved numbers so it isn't recreated on theme change
         const idx = this._floatingNumbers.findIndex(
           n => n.value === value && Math.abs(n.x - x) < 0.01 && Math.abs(n.y - y) < 0.01
         );
         if (idx !== -1) this._floatingNumbers.splice(idx, 1);
-        // Ta bort DOM-elementet efter animationen är klar
+        // Remove the DOM element after the animation completes
         el.addEventListener('animationend', () => el.remove(), { once: true });
       }, 3000);
     }
 
     // ----------------------------------------------------------------
-    // EVENT-HANTERING — pointerdown för både mus och touch
+    // EVENT HANDLING — pointerdown for both mouse and touch
     // ----------------------------------------------------------------
     _attachEvents() {
-      // pointerdown täcker mus + touch utan 300ms-fördröjning
+      // pointerdown covers mouse + touch without 300ms delay
       this._boundPointer = (e) => {
         this._createFloatingNumber(e.clientX, e.clientY);
 
-        // Dölj hint efter första trycket
+        // Hide hint after first tap
         const hint = this.shadowRoot.getElementById('hint');
         if (hint) hint.classList.add('hint--hidden');
       };
@@ -380,15 +380,15 @@
   }
 
   // ================================================================
-  // REGISTRERA KORTET
+  // REGISTER THE CARD
   // ================================================================
   customElements.define('counter-card', CounterCard);
 
-  // Gör kortet sökbart i Home Assistants kort-väljare
+  // Make the card searchable in Home Assistant's card picker
   window.customCards = window.customCards || [];
   window.customCards.push({
     type: 'counter-card',
     name: 'Counter Card',
-    description: 'Interaktiv räknare 0–10 för småbarn',
+    description: 'Interactive 0–10 counter for kids',
   });
 })();
