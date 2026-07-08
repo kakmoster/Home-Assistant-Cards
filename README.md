@@ -1,29 +1,29 @@
 # Home Assistant Cards
 
-Anpassade Lovelace-kort för Home Assistant, byggda av Ludvig.
+Custom Lovelace cards for Home Assistant.
 
-## Kort
+## Cards
 
-| Kort | Beskrivning |
+| Card | Description |
 |------|-------------|
-| `counter-card` | Interaktiv räknare 0–10 för småbarn — automatisk räkning + flytande siffror vid tryck |
-| `emoji-pop-card` | Tryck på skärmen → 1–5 slumpmässiga emojis poppar upp med siffror |
+| `counter-card` | Interactive counter 0–10 for kids — auto-counting + floating numbers on tap |
+| `emoji-pop-card` | Tap the screen → 1–5 random emojis pop up with numbers |
 
 ## Installation via HACS
 
-1. Öppna HACS i Home Assistant
-2. Klicka på **⋮** (menyn uppe till höger) → **Custom repositories**
-3. Klistra in: `https://github.com/kakmoster/Home-Assistant-Cards`
-4. Välj kategori: **Lovelace**
-5. Klicka **Add**
-6. Gå till **Frontend**-fliken → hitta **Home Assistant Cards** → **Install**
-7. Starta om Home Assistant
+1. Open HACS in Home Assistant
+2. Click **⋮** (top-right menu) → **Custom repositories**
+3. Paste: `https://github.com/kakmoster/Home-Assistant-Cards`
+4. Category: **Lovelace**
+5. Click **Add**
+6. Go to **Frontend** tab → find **Home Assistant Cards** → **Install**
+7. Restart Home Assistant
 
-## Manuell installation
+## Manual Installation
 
-1. Ladda ner `counter-card.js` och `emoji-pop-card.js`
-2. Lägg dem i `www/community/home-assistant-cards/` i din config-mapp
-3. Lägg till i `configuration.yaml`:
+1. Download `counter-card.js` and `emoji-pop-card.js`
+2. Place them in `www/community/home-assistant-cards/` in your config folder
+3. Add to `configuration.yaml`:
 
 ```yaml
 lovelace:
@@ -34,9 +34,9 @@ lovelace:
       type: module
 ```
 
-4. Starta om Home Assistant
+4. Restart Home Assistant
 
-## Användning
+## Usage
 
 ```yaml
 type: custom:counter-card
