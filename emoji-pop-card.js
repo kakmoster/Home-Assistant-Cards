@@ -1,0 +1,477 @@
+// ================================================================
+// emoji-pop-card.js — Custom Lovelace Card för HA
+// Tryck på skärmen → 1–5 av samma emoji + siffra.
+// Visningstid: 3+antal sekunder. Sedan 1s cooldown.
+// ================================================================
+
+(function () {
+  'use strict';
+
+  // ================================================================
+  // EMOJIS — kategoriserade för variation
+  // ================================================================
+  const EMOJI_POOL = [
+    // Frukt & bär
+    '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍑', '🍒',
+    // Djur
+    '🐱', '🐶', '🐰', '🐼', '🐨', '🦊', '🐸', '🐵', '🦁', '🐯', '🐹', '🐻',
+    // Natur
+    '🌸', '🌻', '🌺', '🌷', '🌼', '🪷', '🌈', '⭐', '🌟', '☀️',
+    // Diverse
+    '🎈', '🎉', '🎊', '🎀', '🦋', '🐝', '🐞', '🐢', '🐟', '🐬', '🦄',
+  ];
+
+  // ================================================================
+  // FÄRGTEMAN — bakgrundsgradienter
+  // ================================================================
+  const THEMES = [
+    {
+      name: 'Blå dröm',
+      bg: 'linear-gradient(135deg, #e3f2fd 0%, #90caf9 50%, #bbdefb 100%)',
+    },
+    {
+      name: 'Solig',
+      bg: 'linear-gradient(135deg, #fff8e1 0%, #ffe082 50%, #ffecb3 100%)',
+    },
+    {
+      name: 'Äng',
+      bg: 'linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 50%, #c8e6c9 100%)',
+    },
+    {
+      name: 'Lavendel',
+      bg: 'linear-gradient(135deg, #f3e5f5 0%, #ce93d8 50%, #e1bee7 100%)',
+    },
+    {
+      name: 'Solnedgång',
+      bg: 'linear-gradient(135deg, #fff3e0 0%, #ffab91 50%, #fce4ec 100%)',
+    },
+    {
+      name: 'Hav',
+      bg: 'linear-gradient(135deg, #e0f7fa 0%, #80deea 50%, #b2ebf2 100%)',
+    },
+    {
+      name: 'Regnbåge',
+      bg: 'linear-gradient(135deg, #ffcdd2 0%, #fff9c4 25%, #c8e6c9 50%, #b3e5fc 75%, #e1bee7 100%)',
+    },
+  ];
+
+  // ================================================================
+  // HUVUDKOMPONENT — EmojiPopCard
+  // ================================================================
+  class EmojiPopCard extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' });
+      this._themeIndex = Math.floor(Math.random() * THEMES.length);
+      this._locked = false;         // lås så max 1 tryck i taget
+      this._unlockTimer = null;
+      this._fadeTimer = null;
+    }
+
+    // ----------------------------------------------------------------
+    // Lovelace API
+    // ----------------------------------------------------------------
+    setConfig(config) {
+      this._config = config;
+    }
+
+    connectedCallback() {
+      this._render();
+      this._attachEvents();
+    }
+
+    disconnectedCallback() {
+      this._detachEvents();
+      if (this._unlockTimer) clearTimeout(this._unlockTimer);
+      if (this._fadeTimer) clearTimeout(this._fadeTimer);
+    }
+
+    getCardSize() {
+      return 1;
+    }
+
+    // ----------------------------------------------------------------
+    // Räkna ut visningstid baserat på antal emojis
+    // ----------------------------------------------------------------
+    _displayTimeMs(count) {
+      return (3 + count) * 1000;   // 1 st = 4s, 5 st = 8s
+    }
+
+    // ----------------------------------------------------------------
+    // Slumpa en emoji från poolen
+    // ----------------------------------------------------------------
+    _pickOneEmoji() {
+      return EMOJI_POOL[Math.floor(Math.random() * EMOJI_POOL.length)];
+    }
+
+    // ----------------------------------------------------------------
+    // DOM — rendera en gång vid mount
+    // ----------------------------------------------------------------
+    _render() {
+      const theme = THEMES[this._themeIndex];
+      const shadow = this.shadowRoot;
+
+      shadow.innerHTML = `
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');
+
+          :host {
+            display: block;
+            width: 100%;
+            height: 100%;
+          }
+
+          .container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            background: ${theme.bg};
+            background-size: 200% 200%;
+            overflow: hidden;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Nunito', 'Segoe UI', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+            animation: bgShift 10s ease-in-out infinite alternate;
+            transition: background 0.8s ease;
+          }
+
+          @keyframes bgShift {
+            0%   { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+          }
+
+          /* === Välkomsttext innan första trycket === */
+          .welcome {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity 0.6s ease;
+          }
+          .welcome--hidden {
+            opacity: 0;
+          }
+          .welcome-emoji {
+            font-size: min(20vw, 120px);
+            display: block;
+            margin-bottom: 0.2em;
+            animation: welcomeBob 2s ease-in-out infinite;
+          }
+          @keyframes welcomeBob {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-12px); }
+          }
+          .welcome-text {
+            font-size: min(5vw, 28px);
+            font-weight: 800;
+            color: rgba(0,0,0,0.25);
+          }
+
+          /* === Behållare för emojis och siffror === */
+          .pop-container {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 3;
+          }
+
+          /* === Enstaka emoji-pop === */
+          .pop-group {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: min(1.5vw, 10px);
+            max-width: min(60vw, 400px);
+            pointer-events: none;
+            animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          }
+
+          @keyframes popIn {
+            0%   { transform: translate(-50%, -50%) scale(0);  opacity: 0; }
+            60%  { transform: translate(-50%, -50%) scale(1.15); }
+            100% { transform: translate(-50%, -50%) scale(1);  opacity: 1; }
+          }
+
+          /* === Enstaka emoji === */
+          .emoji {
+            font-size: min(12vw, 80px);
+            line-height: 1;
+            display: inline-block;
+            animation: emojiBob 0.8s ease-in-out infinite alternate;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+          }
+
+          .emoji:nth-child(odd)  { animation-duration: 0.7s; }
+          .emoji:nth-child(3n)   { animation-duration: 0.9s; }
+          .emoji:nth-child(5n)   { animation-duration: 1.1s; }
+
+          @keyframes emojiBob {
+            0%   { transform: translateY(0); }
+            100% { transform: translateY(-8px); }
+          }
+
+          /* === Sifferbadge — rund bubbla med antalet === */
+          .number-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: min(10vw, 64px);
+            height: min(10vw, 64px);
+            padding: 0 min(2vw, 12px);
+            border-radius: 999px;
+            background: #e53935;
+            color: #fff;
+            font-size: min(7vw, 44px);
+            font-weight: 900;
+            box-shadow: 0 3px 12px rgba(229, 57, 53, 0.4);
+            animation: badgePop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          }
+
+          @keyframes badgePop {
+            0%   { transform: scale(0); }
+            60%  { transform: scale(1.25); }
+            100% { transform: scale(1); }
+          }
+
+          /* === Nedtoningsanimation när emojis försvinner === */
+          .pop-group.fade-out {
+            animation: fadeOut 0.6s ease forwards !important;
+          }
+
+          @keyframes fadeOut {
+            0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) translateY(-40px); }
+          }
+
+          /* === Cooldown-indikator — diskret prick längst ner === */
+          .status-dot {
+            position: absolute;
+            bottom: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: min(1.5vw, 10px);
+          }
+          .dot {
+            width: min(3vw, 16px);
+            height: min(3vw, 16px);
+            border-radius: 50%;
+            background: #4caf50;
+            transition: background 0.3s, transform 0.3s;
+          }
+          .dot--locked {
+            background: #ff5252;
+            animation: dotPulse 0.8s ease-in-out infinite;
+          }
+          @keyframes dotPulse {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50%      { transform: scale(1.3); opacity: 1; }
+          }
+          .status-label {
+            font-size: min(2.5vw, 14px);
+            font-weight: 700;
+            color: rgba(0,0,0,0.25);
+            transition: color 0.3s;
+          }
+          .status-label--locked {
+            color: #ff5252;
+          }
+
+          /* === Temabyte-knapp (diskret) === */
+          .theme-btn {
+            position: absolute;
+            top: 2%;
+            right: 2%;
+            z-index: 10;
+            background: rgba(255,255,255,0.3);
+            border: none;
+            border-radius: 50%;
+            width: min(10vw, 48px);
+            height: min(10vw, 48px);
+            font-size: min(5vw, 24px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            transition: background 0.2s;
+            backdrop-filter: blur(4px);
+          }
+          .theme-btn:hover {
+            background: rgba(255,255,255,0.5);
+          }
+          .theme-btn:active {
+            transform: scale(0.9);
+          }
+        </style>
+
+        <div class="container" id="container">
+          <div class="welcome" id="welcome">
+            <span class="welcome-emoji">🎉</span>
+            <span class="welcome-text">Tryck på skärmen!</span>
+          </div>
+          <div class="pop-container" id="pop-container"></div>
+          <div class="status-dot" id="status-dot">
+            <span class="dot" id="dot"></span>
+            <span class="status-label" id="status-label">redo</span>
+          </div>
+          <button class="theme-btn" id="theme-btn" title="Byt färgtema">
+            🎨
+          </button>
+        </div>
+      `;
+    }
+
+    // ----------------------------------------------------------------
+    // SKAPA ETT POP — 1–5 av SAMMA emoji + siffra
+    // ----------------------------------------------------------------
+    _createPop(clientX, clientY) {
+      if (this._locked) return;
+      this._locked = true;
+      this._setStatus('locked');
+
+      const container = this.shadowRoot.getElementById('pop-container');
+      if (!container) return;
+
+      // Koordinater i procent
+      const rect = this.getBoundingClientRect();
+      const x = ((clientX - rect.left) / rect.width) * 100;
+      const y = ((clientY - rect.top) / rect.height) * 100;
+
+      // Slumpa 1–5
+      const count = Math.floor(Math.random() * 5) + 1;
+
+      // Välj EN emoji — alla blir samma ("fyra katter")
+      const chosenEmoji = this._pickOneEmoji();
+
+      // Skapa grupp
+      const group = document.createElement('div');
+      group.className = 'pop-group';
+      group.style.left = x + '%';
+      group.style.top = y + '%';
+
+      // Lägg till count st av samma emoji
+      for (let i = 0; i < count; i++) {
+        const span = document.createElement('span');
+        span.className = 'emoji';
+        span.textContent = chosenEmoji;
+        group.appendChild(span);
+      }
+
+      // Lägg till sifferbadge
+      const badge = document.createElement('span');
+      badge.className = 'number-badge';
+      badge.textContent = count;
+      group.appendChild(badge);
+
+      container.appendChild(group);
+
+      // Dölj välkomsttext efter första trycket
+      const welcome = this.shadowRoot.getElementById('welcome');
+      if (welcome) welcome.classList.add('welcome--hidden');
+
+      // === TIMING ===
+      const displayMs = this._displayTimeMs(count);
+
+      // Fade ut efter displayMs
+      this._fadeTimer = setTimeout(() => {
+        group.classList.add('fade-out');
+        group.addEventListener('animationend', () => {
+          if (group.parentNode) group.remove();
+        }, { once: true });
+      }, displayMs);
+
+      // Lås upp: displayMs + fade-tid (600ms) + 1s cooldown
+      this._unlockTimer = setTimeout(() => {
+        this._locked = false;
+        this._setStatus('ready');
+      }, displayMs + 600 + 1000);
+    }
+
+    // ----------------------------------------------------------------
+    // STATUS — uppdatera den lilla indikatorn längst ner
+    // ----------------------------------------------------------------
+    _setStatus(state) {
+      const dot = this.shadowRoot.getElementById('dot');
+      const label = this.shadowRoot.getElementById('status-label');
+      if (!dot || !label) return;
+      if (state === 'locked') {
+        dot.classList.add('dot--locked');
+        label.classList.add('status-label--locked');
+        label.textContent = 'vänta…';
+      } else {
+        dot.classList.remove('dot--locked');
+        label.classList.remove('status-label--locked');
+        label.textContent = 'redo';
+      }
+    }
+
+    // ----------------------------------------------------------------
+    // BYT TEMA
+    // ----------------------------------------------------------------
+    _cycleTheme() {
+      this._themeIndex = (this._themeIndex + 1) % THEMES.length;
+      const container = this.shadowRoot.getElementById('container');
+      if (container) {
+        container.style.background = THEMES[this._themeIndex].bg;
+      }
+    }
+
+    // ----------------------------------------------------------------
+    // EVENTS
+    // ----------------------------------------------------------------
+    _attachEvents() {
+      this._boundPointer = (e) => {
+        this._createPop(e.clientX, e.clientY);
+      };
+
+      this._boundTheme = () => {
+        this._cycleTheme();
+      };
+
+      this.addEventListener('pointerdown', this._boundPointer);
+      this.addEventListener('selectstart', (e) => e.preventDefault());
+      this.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      const themeBtn = this.shadowRoot.getElementById('theme-btn');
+      if (themeBtn) {
+        themeBtn.addEventListener('click', this._boundTheme);
+      }
+    }
+
+    _detachEvents() {
+      if (this._boundPointer) {
+        this.removeEventListener('pointerdown', this._boundPointer);
+      }
+      const themeBtn = this.shadowRoot.getElementById('theme-btn');
+      if (themeBtn && this._boundTheme) {
+        themeBtn.removeEventListener('click', this._boundTheme);
+      }
+    }
+  }
+
+  // ================================================================
+  // REGISTRERA
+  // ================================================================
+  customElements.define('emoji-pop-card', EmojiPopCard);
+
+  window.customCards = window.customCards || [];
+  window.customCards.push({
+    type: 'emoji-pop-card',
+    name: 'Emoji Pop',
+    description: 'Tryck för 1–5 av samma emoji + siffra — lär dig räkna!',
+  });
+})();
