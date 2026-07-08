@@ -1,4 +1,5 @@
 {
-  "name": "Home Assistant Cards",
-  "render_readme": true
+  "name": "Lovelace Kids Cards",
+  "render_readme": true,
+  "filename": "lovelace-kids-cards.js"
 }
