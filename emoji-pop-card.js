@@ -1,69 +1,69 @@
 // ================================================================
-// emoji-pop-card.js — Custom Lovelace Card för HA
-// Tryck på skärmen → 1–5 av samma emoji + siffra.
-// Visningstid: 3+antal sekunder. Sedan 1s cooldown.
+// emoji-pop-card.js — Custom Lovelace Card for HA
+// Tap the screen → 1–5 of the same emoji + number.
+// Display time: 3+count seconds. Then 1s cooldown.
 // ================================================================
 
 (function () {
   'use strict';
 
   // ================================================================
-  // EMOJIS — kategoriserade för variation
+  // EMOJIS — categorized for variety
   // ================================================================
   const EMOJI_POOL = [
-    // Frukt & bär
+    // Fruit & berries
     '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍑', '🍒',
-    // Djur
+    // Animals
     '🐱', '🐶', '🐰', '🐼', '🐨', '🦊', '🐸', '🐵', '🦁', '🐯', '🐹', '🐻',
-    // Natur
+    // Nature
     '🌸', '🌻', '🌺', '🌷', '🌼', '🪷', '🌈', '⭐', '🌟', '☀️',
-    // Diverse
+    // Misc
     '🎈', '🎉', '🎊', '🎀', '🦋', '🐝', '🐞', '🐢', '🐟', '🐬', '🦄',
   ];
 
   // ================================================================
-  // FÄRGTEMAN — bakgrundsgradienter
+  // COLOR THEMES — background gradients
   // ================================================================
   const THEMES = [
     {
-      name: 'Blå dröm',
+      name: 'Blue Dream',
       bg: 'linear-gradient(135deg, #e3f2fd 0%, #90caf9 50%, #bbdefb 100%)',
     },
     {
-      name: 'Solig',
+      name: 'Sunny',
       bg: 'linear-gradient(135deg, #fff8e1 0%, #ffe082 50%, #ffecb3 100%)',
     },
     {
-      name: 'Äng',
+      name: 'Meadow',
       bg: 'linear-gradient(135deg, #e8f5e9 0%, #a5d6a7 50%, #c8e6c9 100%)',
     },
     {
-      name: 'Lavendel',
+      name: 'Lavender',
       bg: 'linear-gradient(135deg, #f3e5f5 0%, #ce93d8 50%, #e1bee7 100%)',
     },
     {
-      name: 'Solnedgång',
+      name: 'Sunset',
       bg: 'linear-gradient(135deg, #fff3e0 0%, #ffab91 50%, #fce4ec 100%)',
     },
     {
-      name: 'Hav',
+      name: 'Ocean',
       bg: 'linear-gradient(135deg, #e0f7fa 0%, #80deea 50%, #b2ebf2 100%)',
     },
     {
-      name: 'Regnbåge',
+      name: 'Rainbow',
       bg: 'linear-gradient(135deg, #ffcdd2 0%, #fff9c4 25%, #c8e6c9 50%, #b3e5fc 75%, #e1bee7 100%)',
     },
   ];
 
   // ================================================================
-  // HUVUDKOMPONENT — EmojiPopCard
+  // MAIN COMPONENT — EmojiPopCard
   // ================================================================
   class EmojiPopCard extends HTMLElement {
     constructor() {
       super();
       this.attachShadow({ mode: 'open' });
       this._themeIndex = Math.floor(Math.random() * THEMES.length);
-      this._locked = false;         // lås så max 1 tryck i taget
+      this._locked = false;         // lock so only 1 tap at a time
       this._unlockTimer = null;
       this._fadeTimer = null;
     }
@@ -91,21 +91,21 @@
     }
 
     // ----------------------------------------------------------------
-    // Räkna ut visningstid baserat på antal emojis
+    // Compute display time based on emoji count
     // ----------------------------------------------------------------
     _displayTimeMs(count) {
-      return (3 + count) * 1000;   // 1 st = 4s, 5 st = 8s
+      return (3 + count) * 1000;   // 1 = 4s, 5 = 8s
     }
 
     // ----------------------------------------------------------------
-    // Slumpa en emoji från poolen
+    // Pick a random emoji from the pool
     // ----------------------------------------------------------------
     _pickOneEmoji() {
       return EMOJI_POOL[Math.floor(Math.random() * EMOJI_POOL.length)];
     }
 
     // ----------------------------------------------------------------
-    // DOM — rendera en gång vid mount
+    // DOM — render once on mount
     // ----------------------------------------------------------------
     _render() {
       const theme = THEMES[this._themeIndex];
@@ -147,7 +147,7 @@
             100% { background-position: 100% 100%; }
           }
 
-          /* === Välkomsttext innan första trycket === */
+          /* === Welcome text before first tap === */
           .welcome {
             position: relative;
             z-index: 2;
@@ -174,7 +174,7 @@
             color: rgba(0,0,0,0.25);
           }
 
-          /* === Behållare för emojis och siffror === */
+          /* === Container for emojis and numbers === */
           .pop-container {
             position: absolute;
             inset: 0;
@@ -182,7 +182,7 @@
             z-index: 3;
           }
 
-          /* === Enstaka emoji-pop === */
+          /* === Single emoji pop === */
           .pop-group {
             position: absolute;
             transform: translate(-50%, -50%);
@@ -202,7 +202,7 @@
             100% { transform: translate(-50%, -50%) scale(1);  opacity: 1; }
           }
 
-          /* === Enstaka emoji === */
+          /* === Single emoji === */
           .emoji {
             font-size: min(12vw, 80px);
             line-height: 1;
@@ -220,7 +220,7 @@
             100% { transform: translateY(-8px); }
           }
 
-          /* === Sifferbadge — rund bubbla med antalet === */
+          /* === Number badge — round bubble with the count === */
           .number-badge {
             display: inline-flex;
             align-items: center;
@@ -243,7 +243,7 @@
             100% { transform: scale(1); }
           }
 
-          /* === Nedtoningsanimation när emojis försvinner === */
+          /* === Fade-out animation when emojis disappear === */
           .pop-group.fade-out {
             animation: fadeOut 0.6s ease forwards !important;
           }
@@ -253,7 +253,7 @@
             100% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) translateY(-40px); }
           }
 
-          /* === Cooldown-indikator — diskret prick längst ner === */
+          /* === Cooldown indicator — subtle dot at the bottom === */
           .status-dot {
             position: absolute;
             bottom: 5%;
@@ -290,7 +290,7 @@
             color: #ff5252;
           }
 
-          /* === Temabyte-knapp (diskret) === */
+          /* === Theme switch button (subtle) === */
           .theme-btn {
             position: absolute;
             top: 2%;
@@ -321,14 +321,14 @@
         <div class="container" id="container">
           <div class="welcome" id="welcome">
             <span class="welcome-emoji">🎉</span>
-            <span class="welcome-text">Tryck på skärmen!</span>
+            <span class="welcome-text">Tap the screen!</span>
           </div>
           <div class="pop-container" id="pop-container"></div>
           <div class="status-dot" id="status-dot">
             <span class="dot" id="dot"></span>
-            <span class="status-label" id="status-label">redo</span>
+            <span class="status-label" id="status-label">ready</span>
           </div>
-          <button class="theme-btn" id="theme-btn" title="Byt färgtema">
+          <button class="theme-btn" id="theme-btn" title="Change color theme">
             🎨
           </button>
         </div>
@@ -336,7 +336,7 @@
     }
 
     // ----------------------------------------------------------------
-    // SKAPA ETT POP — 1–5 av SAMMA emoji + siffra
+    // CREATE A POP — 1–5 of the SAME emoji + number
     // ----------------------------------------------------------------
     _createPop(clientX, clientY) {
       if (this._locked) return;
@@ -346,24 +346,24 @@
       const container = this.shadowRoot.getElementById('pop-container');
       if (!container) return;
 
-      // Koordinater i procent
+      // Coordinates in percent
       const rect = this.getBoundingClientRect();
       const x = ((clientX - rect.left) / rect.width) * 100;
       const y = ((clientY - rect.top) / rect.height) * 100;
 
-      // Slumpa 1–5
+      // Random 1–5
       const count = Math.floor(Math.random() * 5) + 1;
 
-      // Välj EN emoji — alla blir samma ("fyra katter")
+      // Pick ONE emoji — all become the same ("four cats")
       const chosenEmoji = this._pickOneEmoji();
 
-      // Skapa grupp
+      // Create group
       const group = document.createElement('div');
       group.className = 'pop-group';
       group.style.left = x + '%';
       group.style.top = y + '%';
 
-      // Lägg till count st av samma emoji
+      // Add count copies of the same emoji
       for (let i = 0; i < count; i++) {
         const span = document.createElement('span');
         span.className = 'emoji';
@@ -371,7 +371,7 @@
         group.appendChild(span);
       }
 
-      // Lägg till sifferbadge
+      // Add number badge
       const badge = document.createElement('span');
       badge.className = 'number-badge';
       badge.textContent = count;
@@ -379,14 +379,14 @@
 
       container.appendChild(group);
 
-      // Dölj välkomsttext efter första trycket
+      // Hide welcome text after first tap
       const welcome = this.shadowRoot.getElementById('welcome');
       if (welcome) welcome.classList.add('welcome--hidden');
 
       // === TIMING ===
       const displayMs = this._displayTimeMs(count);
 
-      // Fade ut efter displayMs
+      // Fade out after displayMs
       this._fadeTimer = setTimeout(() => {
         group.classList.add('fade-out');
         group.addEventListener('animationend', () => {
@@ -394,7 +394,7 @@
         }, { once: true });
       }, displayMs);
 
-      // Lås upp: displayMs + fade-tid (600ms) + 1s cooldown
+      // Unlock: displayMs + fade time (600ms) + 1s cooldown
       this._unlockTimer = setTimeout(() => {
         this._locked = false;
         this._setStatus('ready');
@@ -402,7 +402,7 @@
     }
 
     // ----------------------------------------------------------------
-    // STATUS — uppdatera den lilla indikatorn längst ner
+    // STATUS — update the small indicator at the bottom
     // ----------------------------------------------------------------
     _setStatus(state) {
       const dot = this.shadowRoot.getElementById('dot');
@@ -411,16 +411,16 @@
       if (state === 'locked') {
         dot.classList.add('dot--locked');
         label.classList.add('status-label--locked');
-        label.textContent = 'vänta…';
+        label.textContent = 'wait…';
       } else {
         dot.classList.remove('dot--locked');
         label.classList.remove('status-label--locked');
-        label.textContent = 'redo';
+        label.textContent = 'ready';
       }
     }
 
     // ----------------------------------------------------------------
-    // BYT TEMA
+    // CYCLE THEME
     // ----------------------------------------------------------------
     _cycleTheme() {
       this._themeIndex = (this._themeIndex + 1) % THEMES.length;
@@ -464,7 +464,7 @@
   }
 
   // ================================================================
-  // REGISTRERA
+  // REGISTER
   // ================================================================
   customElements.define('emoji-pop-card', EmojiPopCard);
 
@@ -472,6 +472,6 @@
   window.customCards.push({
     type: 'emoji-pop-card',
     name: 'Emoji Pop',
-    description: 'Tryck för 1–5 av samma emoji + siffra — lär dig räkna!',
+    description: 'Tap for 1–5 of the same emoji + number — learn to count!',
   });
 })();
